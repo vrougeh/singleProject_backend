@@ -18,6 +18,10 @@ spring:
         format_sql: true
     show-sql: true
     defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:testData.sql
   mvc:
     servlet:
       load-on-startup: 1
