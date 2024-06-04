@@ -7,6 +7,7 @@ import com.tetrips.api.userproject.UserProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,6 @@ import java.util.stream.Collectors;
 public class ProjectServiceImpl implements ProjectService {
   private final ProjectRepository projectRepository;
   private final UserProjectService userProjectService;
-  private final JPAQueryFactory queryFactory;
 
   @Override
   public List<ProjectDTO> getAllProjects() {
@@ -28,22 +28,56 @@ public class ProjectServiceImpl implements ProjectService {
 
   @Override
   public List<ProjectDTO> createProjects(List<ProjectDTO> projects) {
-    List<Project> project = projects.stream()
+    List<Project> projectEntities = projects.stream()
             .map(this::dtoTOEntity)
             .collect(Collectors.toList());
-    projectRepository.saveAll(project);
-    return project.stream()
+
+    List<Project> savedProjects = projectRepository.saveAll(projectEntities);
+
+    // 첫 번째 프로젝트의 ID를 가져옴
+    Long projectId = savedProjects.get(0).getId();
+
+    // 필요시 UserProjectService 호출
+     userProjectService.createUserProject(projectId);
+
+    return savedProjects.stream()
             .map(this::entityTODTO)
             .collect(Collectors.toList());
   }
 
   @Override
   public List<ProjectDTO> updateProjects(List<ProjectDTO> projects) {
-    List<Project> project = projects.stream()
+    List<Project> projectEntities = projects.stream()
             .map(this::dtoTOEntity)
-            .collect(Collectors.toList());
-    projectRepository.saveAll(project);
-    return project.stream()
+            .toList();
+
+    // 업데이트 전에 기존 엔티티를 가져옴
+    List<Long> projectIds = projectEntities.stream().map(Project::getId).collect(Collectors.toList());
+    List<Project> existingProjects = projectRepository.findAllById(projectIds);
+
+    // 기존 엔티티와 업데이트된 엔티티를 매핑하여 연관된 엔티티 업데이트
+    for (Project existingProject : existingProjects) {
+      for (Project updatedProject : projectEntities) {
+        if (existingProject.getId().equals(updatedProject.getId())) {
+          existingProject.setProjectName(updatedProject.getProjectName());
+          existingProject.setLastEditDate(updatedProject.getLastEditDate());
+
+          // 기존 userProjects를 업데이트, null 체크 추가
+          if (existingProject.getUserProjects() == null) {
+            existingProject.setUserProjects(new ArrayList<>());
+          }
+
+          if (updatedProject.getUserProjects() != null) {
+            existingProject.getUserProjects().clear();
+            existingProject.getUserProjects().addAll(updatedProject.getUserProjects());
+          }
+        }
+      }
+    }
+
+    projectRepository.saveAll(existingProjects);
+
+    return existingProjects.stream()
             .map(this::entityTODTO)
             .collect(Collectors.toList());
   }

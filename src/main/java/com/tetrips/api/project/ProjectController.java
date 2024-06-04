@@ -28,10 +28,14 @@ public class ProjectController {
     return ResponseEntity.ok(projects);
   }
 
+//  @PostMapping("/create")
+//  public List<ProjectDTO> createProjects(@RequestBody Long userId, @RequestBody List<ProjectDTO> projects) {
+//    return projectService.createProjects(userId, projects);
+//  }
+
   @PostMapping("/create")
-  public ResponseEntity<List<ProjectDTO>> createProjects(@RequestBody List<ProjectDTO> projects) {
-    List<ProjectDTO> createdProjects = projectService.createProjects(projects);
-    return ResponseEntity.status(HttpStatus.CREATED).body(createdProjects);
+  public List<ProjectDTO> createProjects(@RequestBody List<ProjectDTO> projects) {
+    return projectService.createProjects(projects);
   }
 
   @PutMapping("/update")
@@ -49,7 +53,7 @@ public class ProjectController {
 
   @PostMapping("/get")
   public ResponseEntity<List<ProjectDTO>> getProjectsByUserId(@RequestBody UserProjectDTO request) {
-    List<ProjectDTO> projects = projectService.getProjectsByUserId(request.getId());
+    List<ProjectDTO> projects = projectService.getProjectsByUserId(request.getUserId());
     return ResponseEntity.ok(projects);
   }
 }
